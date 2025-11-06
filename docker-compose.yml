@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  # Initialize a new ALFA project
+  alfa-init:
+    build: .
+    container_name: alfa-init
+    volumes:
+      - ./projects:/projects
+      - ./config:/app/config
+    working_dir: /projects
+    environment:
+      - PYTHONUNBUFFERED=1
+    network_mode: host
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "-c"]
+    command: 
+      - |
+        echo "ALFA Init Service"
+        echo "Usage: docker-compose run alfa-init alfa init <project_name>"
+        echo "After init, copy your credentials.json to ./projects/<project_name>/config/"
+        /bin/bash
+    profiles:
+      - init
+
+  # Acquire audit logs
+  alfa-acquire:
+    build: .
+    container_name: alfa-acquire
+    volumes:
+      - ./projects:/projects
+      - ./config:/app/config
+    working_dir: /projects
+    environment:
+      - PYTHONUNBUFFERED=1
+    network_mode: host  # Required for OAuth callback
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        if [ -z "$PROJECT_NAME" ]; then
+          echo "Error: PROJECT_NAME environment variable not set"
+          echo "Usage: PROJECT_NAME=project_x docker-compose run alfa-acquire"
+          exit 1
+        fi
+        cd /projects/$PROJECT_NAME
+        echo "Running ALFA acquire for project: $PROJECT_NAME"
+        echo "Additional args: $ALFA_ARGS"
+        alfa acquire $ALFA_ARGS
+    profiles:
+      - acquire
+
+  # Analyze audit logs
+  alfa-analyze:
+    build: .
+    container_name: alfa-analyze
+    volumes:
+      - ./projects:/projects
+      - ./config:/app/config
+    working_dir: /projects
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        if [ -z "$PROJECT_NAME" ]; then
+          echo "Error: PROJECT_NAME environment variable not set"
+          echo "Usage: PROJECT_NAME=project_x docker-compose run alfa-analyze"
+          exit 1
+        fi
+        cd /projects/$PROJECT_NAME
+        echo "Running ALFA analyze for project: $PROJECT_NAME"
+        alfa analyze
+    profiles:
+      - analyze
+
+  # Load and interact with logs
+  alfa-load:
+    build: .
+    container_name: alfa-load
+    volumes:
+      - ./projects:/projects
+      - ./config:/app/config
+    working_dir: /projects
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        if [ -z "$PROJECT_NAME" ]; then
+          echo "Error: PROJECT_NAME environment variable not set"
+          echo "Usage: PROJECT_NAME=project_x docker-compose run alfa-load"
+          exit 1
+        fi
+        cd /projects/$PROJECT_NAME
+        echo "Starting interactive Python session for project: $PROJECT_NAME"
+        echo "Example: A = Alfa.load('all')"
+        python3 -i -c "from alfa.alfa import Alfa"
+    profiles:
+      - load
+
+  # Interactive shell for manual operations
+  alfa-shell:
+    build: .
+    container_name: alfa-shell
+    volumes:
+      - ./projects:/projects
+      - ./config:/app/config
+    working_dir: /projects
+    environment:
+      - PYTHONUNBUFFERED=1
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    profiles:
+      - shell
+
+volumes:
+  projects:
+  config:
