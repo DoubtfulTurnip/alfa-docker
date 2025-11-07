@@ -11,7 +11,8 @@ Dockerized version of [ALFA (Automated Audit Log Forensic Analysis)](https://git
 ## Building the Container
 
 ```bash
-cd /mnt/d/SkullDrive/Technical/Software/Git\ Projects/ALFA
+git clone https://github.com/DoubtfulTurnip/alfa-docker.git
+cd alfa-docker
 docker build -t alphadocker .
 ```
 
